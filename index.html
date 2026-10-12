@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peak Warehouse OS — NetSuite Authorization</title>
+</head>
+
+<body>
+  <main>
+    <h1>Peak Warehouse OS</h1>
+    <p id="status">Completing NetSuite authorization…</p>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const NETSUITE_ORIGIN = "https://4337666.app.netsuite.com";
+      const MESSAGE_TYPE = "peak-warehouse-os:oauth-callback";
+
+      const status = document.getElementById("status");
+      const params = new URLSearchParams(window.location.search);
+
+      const code = params.get("code");
+      const state = params.get("state");
+      const error = params.get("error");
+      const errorDescription = params.get("error_description");
+
+      // Remove OAuth values from the visible URL as soon as they have
+      // been read. They are not persisted by this page.
+      try {
+        window.history.replaceState(
+          null,
+          document.title,
+          window.location.pathname
+        );
+      } catch {
+        // URL cleanup failure must not expose data elsewhere or trigger
+        // an alternate transport.
+      }
+
+      if (!window.opener) {
+        status.textContent =
+          "Authorization returned, but the Peak Warehouse OS window is unavailable. You may close this window.";
+        return;
+      }
+
+      const message = {
+        type: MESSAGE_TYPE,
+        code: code || null,
+        state: state || null,
+        error: error || null,
+        errorDescription: errorDescription || null
+      };
+
+      try {
+        // Never use "*" here. The OAuth result is returned only to the
+        // approved NetSuite application origin.
+        window.opener.postMessage(message, NETSUITE_ORIGIN);
+
+        status.textContent = error
+          ? "NetSuite authorization returned an error. You may close this window."
+          : "Authorization returned to Peak Warehouse OS. You may close this window.";
+      } catch {
+        status.textContent =
+          "Authorization returned, but it could not be delivered to Peak Warehouse OS. You may close this window.";
+      }
+
+      // Deliberately do not:
+      // - exchange tokens
+      // - store OAuth data
+      // - log OAuth data
+      // - send data anywhere else
+      // - close the window automatically during characterization
+    })();
+  </script>
+</body>
+</html>
